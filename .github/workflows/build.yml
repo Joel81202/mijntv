@@ -1,0 +1,37 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Uitpakken en bouwen
+        run: |
+          rm -rf bouw && mkdir bouw
+          unzip -q MijnTV-bron.zip -d bouw
+          cd bouw/MijnTV
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk $GITHUB_WORKSPACE/MijnTV.apk
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: MijnTV build ${{ github.run_number }}
+          files: MijnTV.apk
+          make_latest: true
