@@ -36,10 +36,22 @@ jobs:
           done
           echo "Gebouwde APK's:"
           ls -la $GITHUB_WORKSPACE/uit
+          # Versienummer en wijzigingen voor de release
+          versie=$(grep -o 'versionName = "[^"]*"' app/build.gradle.kts | cut -d'"' -f2)
+          echo "VERSIE=$versie" >> $GITHUB_ENV
+          if [ -f WIJZIGINGEN.md ]; then
+            awk '/^## /{n++} n==1' WIJZIGINGEN.md > $GITHUB_WORKSPACE/notities.md
+            printf '\n\n<details><summary>Eerdere versies</summary>\n\n' >> $GITHUB_WORKSPACE/notities.md
+            awk '/^## /{n++} n>=2' WIJZIGINGEN.md >> $GITHUB_WORKSPACE/notities.md
+            printf '\n</details>\n' >> $GITHUB_WORKSPACE/notities.md
+          else
+            echo "Nieuwe build" > $GITHUB_WORKSPACE/notities.md
+          fi
 
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: MijnTV build ${{ github.run_number }}
+          name: MijnTV ${{ env.VERSIE }} (build ${{ github.run_number }})
+          body_path: notities.md
           files: uit/*.apk
           make_latest: true
