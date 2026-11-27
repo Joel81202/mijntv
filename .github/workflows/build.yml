@@ -41,17 +41,30 @@ jobs:
           echo "VERSIE=$versie" >> $GITHUB_ENV
           if [ -f WIJZIGINGEN.md ]; then
             awk '/^## /{n++} n==1' WIJZIGINGEN.md > $GITHUB_WORKSPACE/notities.md
-            printf '\n\n<details><summary>Eerdere versies</summary>\n\n' >> $GITHUB_WORKSPACE/notities.md
-            awk '/^## /{n++} n>=2' WIJZIGINGEN.md >> $GITHUB_WORKSPACE/notities.md
-            printf '\n</details>\n' >> $GITHUB_WORKSPACE/notities.md
+            awk '/^## /{n++} n>=2' WIJZIGINGEN.md > eerder.md
+            if [ -s eerder.md ]; then
+              printf '\n\n<details><summary>Eerdere versies</summary>\n\n' >> $GITHUB_WORKSPACE/notities.md
+              cat eerder.md >> $GITHUB_WORKSPACE/notities.md
+              printf '\n</details>\n' >> $GITHUB_WORKSPACE/notities.md
+            fi
           else
             echo "Nieuwe build" > $GITHUB_WORKSPACE/notities.md
           fi
 
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}
-          name: MijnTV ${{ env.VERSIE }} (build ${{ github.run_number }})
+          tag_name: v${{ env.VERSIE }}
+          name: MijnTV ${{ env.VERSIE }}
           body_path: notities.md
           files: uit/*.apk
           make_latest: true
+
+      - name: Oude builds opruimen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Releases van voor versie 1.00 (build-1, build-2 …) weghalen
+          gh release list --repo ${{ github.repository }} --limit 200 --json tagName -q '.[].tagName' \
+            | grep '^build-' | while read t; do
+              gh release delete "$t" --repo ${{ github.repository }} --yes --cleanup-tag
+            done || true
