@@ -19,6 +19,9 @@ jobs:
           java-version: 17
 
       - name: Uitpakken en bouwen
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
           rm -rf bouw uit && mkdir bouw uit
           unzip -q MijnTV-bron.zip -d bouw
