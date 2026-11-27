@@ -11,25 +11,30 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
 
       - name: Uitpakken en bouwen
+        env:
+          TMDB_KEY: ${{ secrets.TMDB_KEY }}
         run: |
           rm -rf bouw && mkdir bouw
           unzip -q MijnTV-bron.zip -d bouw
           cd bouw/MijnTV
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace
-          cp app/build/outputs/apk/release/app-release.apk $GITHUB_WORKSPACE/MijnTV.apk
+          ./gradlew assembleMichelRelease assembleVriendenRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/michel/release/app-michel-release.apk $GITHUB_WORKSPACE/MijnTV.apk
+          cp app/build/outputs/apk/vrienden/release/app-vrienden-release.apk $GITHUB_WORKSPACE/MijnTV-Vrienden.apk
 
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           name: MijnTV build ${{ github.run_number }}
-          files: MijnTV.apk
+          files: |
+            MijnTV.apk
+            MijnTV-Vrienden.apk
           make_latest: true
