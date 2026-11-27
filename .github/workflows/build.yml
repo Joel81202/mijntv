@@ -20,21 +20,26 @@ jobs:
 
       - name: Uitpakken en bouwen
         run: |
-          rm -rf bouw && mkdir bouw
+          rm -rf bouw uit && mkdir bouw uit
           unzip -q MijnTV-bron.zip -d bouw
           cd bouw/MijnTV
           chmod +x gradlew
-          ./gradlew assembleMichelRelease assemblePublicRelease --no-daemon --stacktrace
-          cp app/build/outputs/apk/michel/release/app-michel-release.apk $GITHUB_WORKSPACE/MijnTV.apk
-          cp app/build/outputs/apk/public/release/app-public-release.apk $GITHUB_WORKSPACE/MijnTV-Public.apk
-          ls -la $GITHUB_WORKSPACE/*.apk
+          # Bouwt alle versies die in de zip zitten, wat er ook in staat
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          for f in $(find app/build/outputs/apk -name '*-release.apk'); do
+            case "$f" in
+              *michel*) naam=MijnTV.apk ;;
+              *public*|*vrienden*) naam=MijnTV-Public.apk ;;
+              *) naam=MijnTV.apk ;;
+            esac
+            cp "$f" "$GITHUB_WORKSPACE/uit/$naam"
+          done
+          echo "Gebouwde APK's:"
+          ls -la $GITHUB_WORKSPACE/uit
 
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           name: MijnTV build ${{ github.run_number }}
-          files: |
-            MijnTV.apk
-            MijnTV-Public.apk
-          fail_on_unmatched_files: true
+          files: uit/*.apk
           make_latest: true
